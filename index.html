@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Database</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { margin: 5px; }
+        textarea { width: 100%; height: 100px; }
+        #response { margin-top: 20px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>Patient Database</h1>
+    
+    <h2>Insert Predefined Patients</h2>
+    <button id="insertBtn">Insert Patients</button>
+
+    <h2>Execute SQL Query</h2>
+    <textarea id="sqlQuery" placeholder="Enter your SQL query here (SELECT or INSERT)"></textarea>
+    <button id="executeQueryBtn">Execute Query</button>
+
+    <div id="response"></div>
+
+    <script>
+        const serverUrl = 'https://server2-591100147622.us-central1.run.app'; // Your server URL
+
+        document.getElementById('insertBtn').addEventListener('click', async () => {
+            const patients = [
+                { name: 'Sara Brown', dateOfBirth: '1990-01-01' },
+                { name: 'Mlon Eusk', dateOfBirth: '1961-02-01' },
+                { name: 'Mack Ja', dateOfBirth: '1940-03-01' },
+                { name: 'John Doe', dateOfBirth: '1990-04-01' },
+            ];
+
+            for (const patient of patients) {
+                try {
+                    const response = await fetch(`${serverUrl}/insert`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(patient),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    document.getElementById('response').innerHTML += 
+                        `Inserted: ${result.success ? 'Yes' : 'No'} (ID: ${result.id || 'N/A'})<br>`;
+                } catch (error) {
+                    document.getElementById('response').innerHTML += `Error inserting ${patient.name}: ${error.message}<br>`;
+                }
+            }
+        });
+
+        document.getElementById('executeQueryBtn').addEventListener('click', async () => {
+            const query = document.getElementById('sqlQuery').value;
+            const method = query.trim().toUpperCase().startsWith('SELECT') ? 'GET' : 'POST';
+            const endpoint = method === 'GET' ? `${serverUrl}/select` : `${serverUrl}/insert`;
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: method === 'POST' ? JSON.stringify({ name: query.split(',')[0], dateOfBirth: query.split(',')[1] }) : null,
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                document.getElementById('response').innerHTML = 
+                    typeof result === 'object' ? JSON.stringify(result, null, 2) : result;
+            } catch (error) {
+                document.getElementById('response').innerHTML = `Error: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html>
+
